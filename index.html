@@ -136,8 +136,8 @@
 
         /**
          * Loads all posts from the Google Apps Script.
-         * Dynamically creates and appends HTML elements to display the forum content.
-         * The response sections have been removed as per user request.
+         * Dynamically creates and prepends HTML elements to display the forum content,
+         * ensuring new messages appear at the top.
          */
         function loadData() {
             // Fetch posts from the Google Apps Script
@@ -153,20 +153,21 @@
                     postsContainer.innerHTML = ''; // Clear existing posts before rendering new ones
 
                     // Iterate over each post received from the server
+                    // To show new messages at the top, iterate in reverse order
+                    // or prepend elements. Here, we'll prepend.
                     posts.forEach(post => {
                         // Create a div for the individual post
                         const postDiv = document.createElement('div');
                         postDiv.classList.add('post'); // Apply 'post' class for styling
 
-                        // Construct the inner HTML for the post, including only the post text.
-                        // Response sections (div.responses, textarea.responseInput, and the "Respond" button)
-                        // have been removed.
+                        // Construct the inner HTML for the post
                         postDiv.innerHTML = `
                             <p class="text-lg font-semibold text-gray-900"><strong>${post.text}</strong></p>
                         `;
 
-                        // Append the complete post div to the main posts container
-                        postsContainer.appendChild(postDiv);
+                        // Prepend the new post to the container
+                        // This ensures that the most recent post appears at the top
+                        postsContainer.prepend(postDiv);
                     });
                 })
                 .catch(error => {
