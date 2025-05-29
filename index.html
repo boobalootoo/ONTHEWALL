@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ON THE WALL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top */
+            min-height: 100vh;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-top: 2rem; /* Add some top margin */
+        }
+        .post-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            resize: vertical;
+            min-height: 80px;
+            font-size: 1rem;
+            box-sizing: border-box; /* Ensure padding is included in width */
+        }
+        button {
+            padding: 0.75rem 1.5rem;
+            background-color: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s ease-in-out;
+            align-self: flex-end; /* Align button to the right */
+        }
+        button:hover {
+            background-color: #2563eb;
+        }
+        .post {
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+        .post p {
+            margin-bottom: 0; /* Adjusted as there are no responses below */
+            line-height: 1.5;
+            color: #374151;
+        }
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1.5rem;
+                margin-top: 1rem;
+            }
+            body {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6 text-center">ON THE WALL</h1>
+        <div class="post-section">
+            <textarea id="postInput" class="shadow-sm focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md" placeholder="What do you want to say?"></textarea>
+            <button onclick="addPost()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">Post</button>
+        </div>
+        <div id="postsContainer"></div>
+    </div>
+
+    <script>
+        // Google Apps Script URL for backend operations
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbzpjVtx0G8QR4aFbdDnE7R2c57AY0D0nL6jYga4B_HS0WrZ1khGMWcBtUPUN_B32p8Lrw/exec";
+
+        /**
+         * Adds a new post to the forum.
+         * Fetches the post text from the input field, sends it to the Google Apps Script,
+         * and then reloads the data to update the display.
+         */
+        function addPost() {
+            const postInput = document.getElementById('postInput');
+            const postText = postInput.value;
+
+            // Validate input: ensure post text is not empty or just whitespace
+            if (postText.trim() === '') {
+                console.log('Post text is empty. Aborting addPost.');
+                return;
+            }
+
+            // Construct the URL for adding a post
+            const url = `${GAS_URL}?action=addPost&postText=${encodeURIComponent(postText)}`;
+
+            // Send the request and handle the response
+            fetch(url)
+                .then(response => {
+                    // Check if the response is OK (status 200-299)
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.text(); // Or response.json() if your GAS returns JSON
+                })
+                .then(() => {
+                    // Data successfully added, reload the posts
+                    loadData();
+                    // Clear the input field after successful post
+                    postInput.value = '';
+                })
+                .catch(error => {
+                    console.error('Error adding post:', error);
+                    // Optionally, provide user feedback about the error
+                });
+        }
+
+        /**
+         * Loads all posts from the Google Apps Script.
+         * Dynamically creates and appends HTML elements to display the forum content.
+         * The response sections have been removed as per user request.
+         */
+        function loadData() {
+            // Fetch posts from the Google Apps Script
+            fetch(`${GAS_URL}?action=getPosts`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json(); // Parse the JSON response
+                })
+                .then(posts => {
+                    const postsContainer = document.getElementById('postsContainer');
+                    postsContainer.innerHTML = ''; // Clear existing posts before rendering new ones
+
+                    // Iterate over each post received from the server
+                    posts.forEach(post => {
+                        // Create a div for the individual post
+                        const postDiv = document.createElement('div');
+                        postDiv.classList.add('post'); // Apply 'post' class for styling
+
+                        // Construct the inner HTML for the post, including only the post text.
+                        // Response sections (div.responses, textarea.responseInput, and the "Respond" button)
+                        // have been removed.
+                        postDiv.innerHTML = `
+                            <p class="text-lg font-semibold text-gray-900"><strong>${post.text}</strong></p>
+                        `;
+
+                        // Append the complete post div to the main posts container
+                        postsContainer.appendChild(postDiv);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading posts:', error);
+                    // Optionally, display an error message to the user
+                    const postsContainer = document.getElementById('postsContainer');
+                    postsContainer.innerHTML = '<p class="text-red-500 text-center">Failed to load forum posts. Please try again later.</p>';
+                });
+        }
+
+        // Load data when the window is fully loaded
+        window.onload = loadData;
+    </script>
+</body>
+</html>
